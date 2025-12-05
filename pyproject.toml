@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ETL-Capstone-Project"
+version = "0.1.0"
+description = "An ETL project for extracting, transforming, and loading data."
+authors = [{name = "Praise Ojerinola", email = "ojerinolapraise@gmail.com"}]
+readme = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dynamic = ["dependencies"]
+
+[project.urls]
+Homepage = "https://github.com/praiseOjay/capstone_project.git"
+
+[project.scripts]
+run_app = "scripts.run_app:main"
+run_etl_only = "scripts.run_app:run_etl_only"
+run_streamlit_only = "scripts.run_app:run_streamlit_only"
+run_tests = "tests.run_tests:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["*"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
