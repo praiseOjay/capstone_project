@@ -20,10 +20,10 @@ FILE_PATH = os.path.join(
     "data",
     "raw",
     "fitness_stats",
-    "fitness_dataset.csv",
+    "unclean_fitness_dataset.csv",
 )
 
-# Initialize the logger with specific configuration for this module
+# Initialise the logger with specific configuration for this module
 logger = setup_logger(
     __name__, "extract_fitness_stats.log", level=logging.DEBUG
 )
@@ -40,7 +40,7 @@ def extract_fitness_stats() -> pd.DataFrame:
     Extract fitness statistics data from the source CSV file.
 
     This function reads the fitness statistics dataset from a predefined
-    file path, logs the extraction process details including performance
+    file path, logs the extraction process details, including performance
     metrics, and handles any exceptions that may occur during extraction.
 
     Returns:
