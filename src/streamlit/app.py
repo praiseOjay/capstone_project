@@ -26,6 +26,9 @@ def main():
     # Configure the home dashboard page
     dash_board = st.Page("pages/dashboard.py", title="Home", icon="🏠")
 
+    # Configure the progression page
+    fitness_progression = st.Page("pages/fitness_dashboard.py", title="Progression", icon="")
+
     # Configure the seasonal patterns analysis page
     seasonal_patterns = st.Page(
         "pages/seasonal_patterns.py", title="Seasonal Trends", icon="📅"
@@ -35,6 +38,7 @@ def main():
     pages = st.navigation(
         [
             dash_board,
+            fitness_progression,
             seasonal_patterns,
         ]
     )
