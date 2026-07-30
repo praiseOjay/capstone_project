@@ -31,3 +31,11 @@ include = ["*"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
+
+[tool.pytest.ini_options]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "component: Component tests",
+    "e2e: End-to-end tests",
+]

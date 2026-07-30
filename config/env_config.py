@@ -8,33 +8,16 @@ ENVS = ["dev", "test", "prod"]
 def setup_env(argv: List[str]) -> None:
     """
     Set up the environment for the ETL process.
-    This function loads the appropriate environment
-    variables based on the provided environment.
-    It expects the first argument to be the environment
-    name (e.g., 'dev', 'test', 'prod').
-    It clears any previous environment variables
-    related to database configurations to avoid
-    conflicts when switching environments.
-    This function should be called before loading
-    new environment variables.
-    It is particularly useful in a development
-    or testing environment where the same script
-    might be run multiple times with different
-    configurations.
-    In a production environment, this function
-    is not necessary as the script is run once
-    with a specific configuration.
-    :param argv: List of command line arguments
-    :raises ValueError: If the environment is not provided
-    or is not one of the expected values.
-    :raises KeyError: If the ENV variable is not set
+    Expects environment name ('dev', 'test', 'prod') as an argument.
     """
-    if len(argv) != 2 or argv[1] not in ENVS:
+    if len(argv) == 3 and argv[1] in ["etl_only", "streamlit_only"] and argv[2] in ENVS:
+        env = argv[2]
+    elif len(argv) == 2 and argv[1] in ENVS:
+        env = argv[1]
+    else:
         raise ValueError(
             "Please provide an environment: " f"{ENVS}. E.g. run_etl dev"
         )
-
-    env = argv[1]
 
     cleanup_previous_env()
     os.environ["ENV"] = env

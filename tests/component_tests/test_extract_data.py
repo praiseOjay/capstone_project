@@ -20,7 +20,12 @@ def expected_unclean_data_csv():
     Returns:
         pd.DataFrame: The raw data as a DataFrame
     """
-    return pd.read_csv("data/raw/fitness_stats/fitness_dataset.csv")
+    # Try unclean_fitness_dataset.csv first, then fitness_dataset.csv
+    import os
+    file_path = "data/raw/fitness_stats/unclean_fitness_dataset.csv"
+    if not os.path.exists(file_path):
+        file_path = "data/raw/fitness_stats/fitness_dataset.csv"
+    return pd.read_csv(file_path)
 
 
 def test_extract_data(expected_unclean_data_csv):

@@ -6,6 +6,7 @@ handling the loading of processed data to output files. It provides
 error handling and logging for the loading process.
 """
 
+import pandas as pd
 from src.utils.logging_utils import setup_logger
 from src.etl.load.load_fitness_stats import load_fitness_stats
 

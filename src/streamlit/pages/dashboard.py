@@ -48,13 +48,19 @@ st.markdown(
 )
 
 
+from pathlib import Path
+
 # ============================================================================
 # LOAD DATA
 # ============================================================================
 @st.cache_data
 def load_data():
     """Load the single clean dataset and cache it"""
-    return pd.read_parquet("data/output/clean_fitness_stats.parquet")
+    path = Path("data/output/clean_fitness_stats.parquet")
+    if not path.exists():
+        st.warning("Processed dataset not found at 'data/output/clean_fitness_stats.parquet'. Please run the ETL pipeline first.")
+        st.stop()
+    return pd.read_parquet(path)
 
 
 @st.cache_data

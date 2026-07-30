@@ -239,6 +239,7 @@ def handle_missing_values(df: pd.DataFrame) -> pd.DataFrame:
 
     # For hours_sleep, use median by age group if possible
     if "hours_sleep" in df.columns and "age" in df.columns:
+        df["hours_sleep"] = pd.to_numeric(df["hours_sleep"], errors="coerce").astype(float)
         # Ensure age is numeric for binning
         if df["age"].dtype == "object":
             df["age"] = pd.to_numeric(df["age"], errors="coerce")

@@ -78,4 +78,4 @@ def extract_fitness_stats() -> pd.DataFrame:
     except Exception as e:
         # Log and re-raise exceptions for proper error handling
         logger.error(f"{FILE_PATH} data extraction failed: {e}")
-        raise Exception(f"Failed to load the CSV file at: {FILE_PATH}")
+        raise Exception(f"Failed to load the CSV file at: {FILE_PATH}") from e

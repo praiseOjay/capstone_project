@@ -2,13 +2,15 @@ import os
 import sys
 import subprocess
 from pathlib import Path
+
+# Add the project root to the Python path
+project_root = Path(__file__).parent.parent.resolve()
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
 from config.env_config import setup_env
 from src.etl.run_etl import main as run_etl
 from src.utils.logging_utils import setup_logger
-
-# Add the project root to the Python path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
 
 def main():

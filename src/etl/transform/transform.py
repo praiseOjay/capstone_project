@@ -30,7 +30,11 @@ def transform_data(input_df: pd.DataFrame) -> dict:
 
         # Create result dictionary with both datasets
         result = {
-            "cleaned_df": cleaned_df,
+            "cleaned_df": (
+                visualisation_data
+                if isinstance(visualisation_data, pd.DataFrame)
+                else cleaned_df
+            ),
             "visualisation_data": visualisation_data,
         }
 

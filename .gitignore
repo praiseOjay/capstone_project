@@ -141,9 +141,9 @@ cython_debug/
 .vscode/
 
 # Data files
- data/raw/
- data/processed/
- data/output/
+data/raw/
+data/processed/
+data/output/
 
 # Logs
 logs/

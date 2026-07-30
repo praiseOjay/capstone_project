@@ -27,7 +27,7 @@ def main():
     dash_board = st.Page("pages/dashboard.py", title="Home", icon="🏠")
 
     # Configure the progression page
-    fitness_progression = st.Page("pages/fitness_dashboard.py", title="Progression", icon="📈")
+    fitness_progression = st.Page("pages/fitness_progression.py", title="Progression", icon="📈")
 
     # Configure the seasonal patterns analysis page
     seasonal_patterns = st.Page(
