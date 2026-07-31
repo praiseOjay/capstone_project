@@ -20,7 +20,7 @@ FILE_PATH = os.path.join(
     "data",
     "raw",
     "fitness_stats",
-    "unclean_fitness_dataset.csv",
+    "uncleaned_fitness_stats.csv",
 )
 
 # Initialise the logger with specific configuration for this module

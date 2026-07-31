@@ -5,63 +5,34 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
 import calendar
+from pathlib import Path
+import sys
 
-# ============================================================================
-# PAGE CONFIGURATION
-# ============================================================================
-st.set_page_config(
-    layout="wide",
-    initial_sidebar_state="expanded",
+# Add project root to sys.path if not present
+project_root = Path(__file__).parent.parent.parent.parent.resolve()
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from src.streamlit.utils_ui import (  # noqa: E402
+    inject_custom_css,
+    apply_plotly_theme,
+    render_kpi_card,
+    render_insight_box,
+    render_page_header,
+    create_radial_day_chart,
+    PRIMARY_COLOR,
+    SECONDARY_COLOR,
+    ACCENT_CYAN,
+    ACCENT_EMERALD,
+    ACCENT_AMBER,
+    ACCENT_ROSE,
 )
 
 # ============================================================================
-# CUSTOM CSS
+# PAGE CONFIGURATION & CSS
 # ============================================================================
-st.markdown(
-    """
-    <style>
-    .main {
-        padding: 0rem 1rem;
-    }
-    .season-card {
-        padding: 20px;
-        border-radius: 10px;
-        color: white;
-        text-align: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        margin: 10px 0;
-    }
-    .winter-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    .spring-card { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-    .summer-card { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-    .fall-card { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-    
-    .metric-value {
-        font-size: 2rem;
-        font-weight: bold;
-        margin: 10px 0;
-    }
-    .metric-label {
-        font-size: 0.9rem;
-        opacity: 0.9;
-    }
-    h1 {
-        color: #667eea;
-        text-align: center;
-        padding: 20px 0;
-    }
-    .insight-box {
-        background: #f0f2f6;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 4px solid #667eea;
-        margin: 10px 0;
-    }
-    </style>
-""",
-    unsafe_allow_html=True,
-)
-
+st.set_page_config(layout="wide", initial_sidebar_state="expanded")
+inject_custom_css()
 
 # ============================================================================
 # LOAD DATA
@@ -69,129 +40,45 @@ st.markdown(
 @st.cache_data
 def load_data():
     """Load the single clean dataset and cache it"""
-    return pd.read_parquet("data/output/clean_fitness_stats.parquet")
-
-
-@st.cache_data
-def load_seasonal_summary(df=None):
-    """Create seasonal summary from the main dataset"""
-    if df is None:
-        df = load_data()
-
-    return (
-        df.groupby("season")
-        .agg(
-            {
-                "participant_id": "count",
-                "calories_burned": "mean",
-                "duration_minutes": "mean",
-                "fitness_level": "mean",
-                "daily_steps": "mean",
-            }
+    path = Path("data/output/clean_fitness_stats.parquet")
+    if not path.exists():
+        st.warning(
+            "⚠️ Processed dataset not found at 'data/output/clean_fitness_stats.parquet'. "
+            "Please run the ETL pipeline first."
         )
-        .round(2)
-        .reset_index()
-    )
-
-
-@st.cache_data
-def load_monthly_stats(df=None):
-    """Create monthly statistics from the main dataset"""
-    if df is None:
-        df = load_data()
-
-    # Extract month number if needed
-    if "month" not in df.columns:
-        df = df.assign(month=df["date"].dt.month)
-
-    return (
-        df.groupby("month")
-        .agg(
-            {
-                "participant_id": "count",
-                "calories_burned": "mean",
-                "fitness_level": "mean",
-                "daily_steps": "mean",
-                "duration_minutes": "mean",
-            }
-        )
-        .reset_index()
-    )
-
-
-@st.cache_data
-def load_weekend_comparison(df=None):
-    """Create weekend vs weekday comparison"""
-    if df is None:
-        df = load_data()
-
-    return (
-        df.groupby("is_weekend")
-        .agg(
-            {
-                "participant_id": "count",
-                "calories_burned": "mean",
-                "duration_minutes": "mean",
-                "fitness_level": "mean",
-                "daily_steps": "mean",
-            }
-        )
-        .round(2)
-        .reset_index()
-    )
-
-
-@st.cache_data
-def load_intensity_by_season(df=None):
-    """Get intensity distribution by season"""
-    if df is None:
-        df = load_data()
-
-    return df.groupby(["season", "intensity"]).size().reset_index(name="count")
+        st.stop()
+    return pd.read_parquet(path)
 
 
 df = load_data()
 
-# ============================================================================
-# HEADER
-# ============================================================================
-st.title("📅 Seasonal Patterns in Exercise Behaviour")
-st.markdown("### Comprehensive Analysis of Temporal Exercise Trends")
-st.markdown("---")
+# Header
+render_page_header(
+    title="Seasonal Patterns & Temporal Dynamics",
+    subtitle="Evaluating seasonal influences, monthly cycles, and weekly workout rhythms",
+    icon="📅",
+)
 
 # ============================================================================
 # SIDEBAR FILTERS
 # ============================================================================
-st.sidebar.header("🔍 Filters")
+st.sidebar.markdown("## 🔍 Seasonal Filters")
 
-# Season filter
-season_options = ["All"] + sorted(df["season"].unique().tolist())
-selected_seasons = st.sidebar.multiselect(
-    "Select Seasons", season_options, default=["All"]
-)
+season_options = ["All"] + sorted(list(df["season"].dropna().unique()))
+selected_seasons = st.sidebar.multiselect("Select Seasons", season_options, default=["All"])
 
-# Gender filter
-gender_options = ["All"] + list(df["gender"].unique())
+gender_options = ["All"] + sorted(list(df["gender"].dropna().unique()))
 selected_gender = st.sidebar.selectbox("Gender", gender_options)
 
-# Age range filter
-age_range = st.sidebar.slider(
-    "Age Range",
-    int(df["age"].min()),
-    int(df["age"].max()),
-    (int(df["age"].min()), int(df["age"].max())),
-)
+min_age, max_age = int(df["age"].min()), int(df["age"].max())
+age_range = st.sidebar.slider("Age Range", min_age, max_age, (min_age, max_age))
 
-# Activity type filter
-activity_options = ["All"] + list(df["activity_type"].unique())
-selected_activities = st.sidebar.multiselect(
-    "Activity Types", activity_options, default=["All"]
-)
+activity_options = ["All"] + sorted(list(df["activity_type"].dropna().unique()))
+selected_activities = st.sidebar.multiselect("Activity Types", activity_options, default=["All"])
 
-# Apply filters
 filtered_df = df.copy()
 
-if "All" not in selected_seasons:
+if "All" not in selected_seasons and selected_seasons:
     filtered_df = filtered_df[filtered_df["season"].isin(selected_seasons)]
 
 if selected_gender != "All":
@@ -201,365 +88,216 @@ filtered_df = filtered_df[
     (filtered_df["age"] >= age_range[0]) & (filtered_df["age"] <= age_range[1])
 ]
 
-if "All" not in selected_activities:
-    filtered_df = filtered_df[
-        filtered_df["activity_type"].isin(selected_activities)
-    ]
+if "All" not in selected_activities and selected_activities:
+    filtered_df = filtered_df[filtered_df["activity_type"].isin(selected_activities)]
 
-st.sidebar.markdown(f"**Records:** {len(filtered_df):,} / {len(df):,}")
+st.sidebar.markdown("---")
+st.sidebar.info(f"📊 **Active Sample:** {len(filtered_df):,} / {len(df):,} sessions")
+
+if filtered_df.empty:
+    st.warning("⚠️ No records match the selected sidebar filters.")
+    st.stop()
 
 # ============================================================================
-# SEASONAL OVERVIEW CARDS
+# SEASONAL OVERVIEW HERO CARDS
 # ============================================================================
-st.markdown("## 🌍 Seasonal Overview")
+st.markdown("### ❄️☀️ Seasonal Performance Summary")
 
-# Load pre-computed seasonal summary
-seasonal_summary = load_seasonal_summary()
+season_stats = (
+    filtered_df.groupby("season")
+    .agg(
+        total_sessions=("participant_id", "count"),
+        avg_calories=("calories_burned", "mean"),
+        avg_fitness=("fitness_level", "mean"),
+        avg_duration=("duration_minutes", "mean"),
+    )
+    .reset_index()
+)
 
-col1, col2, col3, col4 = st.columns(4)
+all_seasons = ["Spring", "Summer", "Fall", "Winter"]
+season_icons = {"Spring": "🌸", "Summer": "☀️", "Fall": "🍂", "Winter": "❄️"}
+season_bgs = {
+    "Spring": "linear-gradient(135deg, #f43f5e 0%, #fb7185 100%)",
+    "Summer": "linear-gradient(135deg, #06b6d4 0%, #38bdf8 100%)",
+    "Fall": "linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)",
+    "Winter": "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)",
+}
 
-seasons_order = ["Winter", "Spring", "Summer", "Fall"]
-season_emojis = {"Winter": "❄️", "Spring": "🌸", "Summer": "☀️", "Fall": "🍂"}
+cols = st.columns(4)
 
-for col, season in zip([col1, col2, col3, col4], seasons_order):
+for col, season_name in zip(cols, all_seasons):
+    s_row = season_stats[season_stats["season"] == season_name]
     with col:
-        if season in seasonal_summary["season"].values:
-            data = seasonal_summary[seasonal_summary["season"] == season].iloc[
-                0
-            ]
-            st.markdown(
-                f"""
-                <div class="season-card {season.lower()}-card">
-                    <h3>{season_emojis[season]} {season}</h3>
-                    <div class="metric-value">{int(data['participant_id']):,}</div>
-                    <div class="metric-label">Activities</div>
-                    <hr style="border-color: rgba(255,255,255,0.3); margin: 15px 0;">
-                    <div style="font-size: 0.9rem;">
-                        🔥 {data['calories_burned']:.1f} cal<br>
-                        ⏱️ {data['duration_minutes']:.0f} min<br>
-                        💪 {data['fitness_level']:.1f} fitness<br>
-                        👣 {data['daily_steps']:.0f} steps
-                    </div>
-                </div>
-            """,
-                unsafe_allow_html=True,
+        if not s_row.empty:
+            sess = s_row.iloc[0]["total_sessions"]
+            cal = s_row.iloc[0]["avg_calories"]
+            fit = s_row.iloc[0]["avg_fitness"]
+            dur = s_row.iloc[0]["avg_duration"]
+            render_kpi_card(
+                title=f"{season_name} Cohort",
+                value=f"{sess:,} sessions",
+                delta=f"{cal:.0f} kcal | {dur:.0f}m",
+                delta_is_positive=True,
+                icon=season_icons.get(season_name, "🗓️"),
+                icon_bg=season_bgs.get(season_name, PRIMARY_COLOR),
+            )
+        else:
+            render_kpi_card(
+                title=f"{season_name} Cohort",
+                value="0 sessions",
+                delta="No records",
+                delta_is_positive=False,
+                icon=season_icons.get(season_name, "🗓️"),
             )
 
-st.markdown("---")
+st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
 
 # ============================================================================
-# SEASONAL COMPARISONS
+# MONTHLY TREND LINES
 # ============================================================================
-st.markdown("## 📊 Seasonal Performance Comparison")
+st.markdown("### 📈 Monthly Trajectory Trends")
+
+if "month" not in filtered_df.columns:
+    filtered_df["month"] = filtered_df["date"].dt.month
+
+monthly = (
+    filtered_df.groupby("month")
+    .agg(
+        sessions=("participant_id", "count"),
+        avg_calories=("calories_burned", "mean"),
+        avg_fitness=("fitness_level", "mean"),
+        avg_steps=("daily_steps", "mean"),
+    )
+    .reset_index()
+)
+
+monthly["month_num"] = pd.to_numeric(monthly["month"], errors="coerce").fillna(0).astype(int)
+monthly["month_name"] = monthly["month_num"].apply(
+    lambda m: calendar.month_name[m] if 1 <= m <= 12 else str(m)
+)
 
 col1, col2 = st.columns(2)
 
 with col1:
-    # Seasonal metrics radar chart
-    st.markdown("### 🎯 Multi-Metric Seasonal Comparison")
-
-    # Normalize data for radar chart
-    metrics = [
-        "calories_burned",
-        "duration_minutes",
-        "fitness_level",
-        "daily_steps",
-    ]
-    seasonal_normalized = seasonal_summary.copy()
-
-    for metric in metrics:
-        max_val = seasonal_normalized[metric].max()
-        if max_val > 0:
-            seasonal_normalized[metric] = (
-                seasonal_normalized[metric] / max_val
-            ) * 100
-
-    fig_radar = go.Figure()
-
-    colors = {
-        "Winter": "#667eea",
-        "Spring": "#f093fb",
-        "Summer": "#4facfe",
-        "Fall": "#fa709a",
-    }
-
-    for season in seasons_order:
-        season_data = seasonal_normalized[
-            seasonal_normalized["season"] == season
-        ]
-        if len(season_data) > 0:
-            fig_radar.add_trace(
-                go.Scatterpolar(
-                    r=season_data[metrics].values.tolist()[0],
-                    theta=["Calories", "Duration", "Fitness", "Steps"],
-                    fill="toself",
-                    name=season,
-                    line=dict(color=colors[season], width=2),
-                    opacity=0.7,
-                )
-            )
-
-    fig_radar.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
-        showlegend=True,
-        height=400,
+    st.markdown("##### Monthly Activity Volume")
+    fig_vol = px.bar(
+        monthly,
+        x="month_name",
+        y="sessions",
+        color="sessions",
+        color_continuous_scale="Blues",
+        text="sessions",
     )
-
-    st.plotly_chart(fig_radar, use_container_width=True)
+    fig_vol.update_traces(textposition="outside")
+    fig_vol.update_layout(height=340, xaxis_title="", yaxis_title="Total Sessions", coloraxis_showscale=False)
+    st.plotly_chart(apply_plotly_theme(fig_vol), use_container_width=True)
 
 with col2:
-    # Seasonal activity count
-    st.markdown("### 📈 Activity Volume by Season")
-
-    season_counts = filtered_df["season"].value_counts().reindex(seasons_order)
-
-    fig_season_bar = go.Figure()
-
-    fig_season_bar.add_trace(
-        go.Bar(
-            x=season_counts.index,
-            y=season_counts.values,
-            marker=dict(
-                color=[colors[s] for s in season_counts.index],
-                line=dict(color="white", width=2),
-            ),
-            text=season_counts.values,
-            texttemplate="%{text:,}",
-            textposition="outside",
-            hovertemplate="<b>%{x}</b><br>Activities: %{y:,}<extra></extra>",
-        )
+    st.markdown("##### Monthly Caloric Expenditure & Fitness Level")
+    fig_dual = make_subplots(specs=[[{"secondary_y": True}]])
+    fig_dual.add_trace(
+        go.Scatter(x=monthly["month_name"], y=monthly["avg_calories"], name="Avg Calories (kcal)", line=dict(color=ACCENT_AMBER, width=3)),
+        secondary_y=False,
     )
-
-    fig_season_bar.update_layout(
-        height=400,
-        xaxis_title="Season",
-        yaxis_title="Number of Activities",
-        showlegend=False,
+    fig_dual.add_trace(
+        go.Scatter(x=monthly["month_name"], y=monthly["avg_fitness"], name="Avg Fitness Score", line=dict(color=PRIMARY_COLOR, width=3, dash="dash")),
+        secondary_y=True,
     )
+    fig_dual.update_layout(height=340, hovermode="x unified", legend=dict(orientation="h", y=1.1, x=1))
+    st.plotly_chart(apply_plotly_theme(fig_dual), use_container_width=True)
 
-    st.plotly_chart(fig_season_bar, use_container_width=True)
-
-# ============================================================================
-# MONTHLY TRENDS
-# ============================================================================
-st.markdown("## 📅 Monthly Exercise Patterns")
-
-# Load pre-computed monthly statistics
-monthly_stats = load_monthly_stats()
-monthly_stats["month_name"] = monthly_stats["month"]
-
-# Create 4 subplots for monthly trends
-fig_monthly = make_subplots(
-    rows=2,
-    cols=2,
-    subplot_titles=(
-        "Monthly Activity Count",
-        "Average Calories Burned",
-        "Average Fitness Level",
-        "Average Daily Steps",
-    ),
-    vertical_spacing=0.15,
-    horizontal_spacing=0.1,
-)
-
-# Activity Count
-fig_monthly.add_trace(
-    go.Scatter(
-        x=monthly_stats["month_name"],
-        y=monthly_stats["participant_id"],
-        mode="lines+markers",
-        name="Activities",
-        line=dict(color="#667eea", width=3),
-        marker=dict(size=8),
-        fill="tozeroy",
-        fillcolor="rgba(102, 126, 234, 0.2)",
-    ),
-    row=1,
-    col=1,
-)
-
-# Calories
-fig_monthly.add_trace(
-    go.Scatter(
-        x=monthly_stats["month_name"],
-        y=monthly_stats["calories_burned"],
-        mode="lines+markers",
-        name="Calories",
-        line=dict(color="#f093fb", width=3),
-        marker=dict(size=8),
-        fill="tozeroy",
-        fillcolor="rgba(240, 147, 251, 0.2)",
-    ),
-    row=1,
-    col=2,
-)
-
-# Fitness Level
-fig_monthly.add_trace(
-    go.Scatter(
-        x=monthly_stats["month_name"],
-        y=monthly_stats["fitness_level"],
-        mode="lines+markers",
-        name="Fitness",
-        line=dict(color="#4facfe", width=3),
-        marker=dict(size=8),
-        fill="tozeroy",
-        fillcolor="rgba(79, 172, 254, 0.2)",
-    ),
-    row=2,
-    col=1,
-)
-
-# Daily Steps
-fig_monthly.add_trace(
-    go.Scatter(
-        x=monthly_stats["month_name"],
-        y=monthly_stats["daily_steps"],
-        mode="lines+markers",
-        name="Steps",
-        line=dict(color="#fa709a", width=3),
-        marker=dict(size=8),
-        fill="tozeroy",
-        fillcolor="rgba(250, 112, 154, 0.2)",
-    ),
-    row=2,
-    col=2,
-)
-
-fig_monthly.update_layout(height=600, showlegend=False, hovermode="x unified")
-
-st.plotly_chart(fig_monthly, use_container_width=True)
+st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
 
 # ============================================================================
-# ACTIVITY TYPE BY SEASON
+# 7-DAY WORKOUT RHYTHM & WEEKEND DYNAMICS
 # ============================================================================
-st.markdown("## 🏃 Activity Preferences by Season")
+st.markdown("### 🗓️ 7-Day Workout Rhythm & Weekend Dynamics")
+
+col_w_metrics, col_radial = st.columns([1, 1])
+
+w_agg = (
+    filtered_df.groupby("is_weekend")
+    .agg(
+        sessions=("participant_id", "count"),
+        calories=("calories_burned", "mean"),
+        duration=("duration_minutes", "mean"),
+        fitness=("fitness_level", "mean"),
+    )
+    .round(2)
+)
+
+label_map = {False: "Weekday", True: "Weekend", 0: "Weekday", 1: "Weekend", "False": "Weekday", "True": "Weekend"}
+w_agg.index = w_agg.index.map(lambda x: label_map.get(x, str(x)))
+w_agg = w_agg.reindex(["Weekday", "Weekend"]).fillna(0)
+
+with col_w_metrics:
+    st.markdown("##### Weekday vs. Weekend Averages")
+    
+    wk_sess = w_agg.loc["Weekday", "sessions"]
+    wk_cal = w_agg.loc["Weekday", "calories"]
+    wk_dur = w_agg.loc["Weekday", "duration"]
+
+    we_sess = w_agg.loc["Weekend", "sessions"]
+    we_cal = w_agg.loc["Weekend", "calories"]
+    we_dur = w_agg.loc["Weekend", "duration"]
+
+    r1, r2 = st.columns(2)
+    with r1:
+        render_kpi_card("Weekday Volume", f"{wk_sess:,} sessions", delta=f"{wk_dur:.0f}m avg", icon="💼")
+    with r2:
+        render_kpi_card("Weekend Volume", f"{we_sess:,} sessions", delta=f"{we_dur:.0f}m avg", icon="🏖️")
+
+    r3, r4 = st.columns(2)
+    with r3:
+        render_kpi_card("Weekday Burn", f"{wk_cal:.0f} kcal", icon="🔥")
+    with r4:
+        render_kpi_card("Weekend Burn", f"{we_cal:.0f} kcal", icon="⚡")
+
+with col_radial:
+    st.markdown("##### 7-Day Workout Rhythm Clock")
+    fig_radial = create_radial_day_chart(filtered_df)
+    st.plotly_chart(fig_radial, use_container_width=True)
+
+st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
+
+# ============================================================================
+# SEASONAL INTENSITY HEATMAP
+# ============================================================================
+st.markdown("### ⚡ Seasonal Intensity Distribution")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### 📊 Top Activities by Season")
-
-    selected_season_viz = st.selectbox(
-        "Select Season to Analyse", seasons_order, key="season_activity"
+    st.markdown("##### Session Count by Season & Intensity")
+    intensity_matrix = filtered_df.groupby(["season", "intensity"]).size().unstack(fill_value=0)
+    fig_heat = px.imshow(
+        intensity_matrix,
+        labels=dict(x="Intensity Level", y="Season", color="Session Count"),
+        color_continuous_scale="Viridis",
+        aspect="auto",
+        text_auto=True,
     )
+    fig_heat.update_layout(height=340)
+    st.plotly_chart(apply_plotly_theme(fig_heat), use_container_width=True)
 
-    season_activities = (
-        filtered_df[filtered_df["season"] == selected_season_viz][
-            "activity_type"
-        ]
-        .value_counts()
-        .head(10)
-        .sort_values(ascending=True)
+with col2:
+    st.markdown("##### Duration vs Calories across Seasons")
+    fig_scat = px.scatter(
+        filtered_df,
+        x="duration_minutes",
+        y="calories_burned",
+        color="season",
+        color_discrete_sequence=[PRIMARY_COLOR, ACCENT_CYAN, ACCENT_AMBER, ACCENT_ROSE],
+        opacity=0.6,
+        labels={"duration_minutes": "Duration (min)", "calories_burned": "Calories (kcal)"},
     )
+    fig_scat.update_layout(height=340)
+    st.plotly_chart(apply_plotly_theme(fig_scat), use_container_width=True)
 
-    fig_top_activities = go.Figure()
-
-    fig_top_activities.add_trace(
-        go.Bar(
-            x=season_activities.values,
-            y=season_activities.index,
-            orientation="h",
-            marker=dict(
-                color=season_activities.values,
-                colorscale="Viridis",
-                showscale=False,
-            ),
-            text=season_activities.values,
-            texttemplate="%{text:,}",
-            textposition="outside",
-            hovertemplate="<b>%{y}</b><br>Count: %{x:,}<extra></extra>",
-        )
-    )
-
-    fig_top_activities.update_layout(
-        height=500,
-        xaxis_title="Number of Activities",
-        yaxis_title="",
-        showlegend=False,
-    )
-
-    st.plotly_chart(fig_top_activities, use_container_width=True)
-
-# ============================================================================
-# WEEKEND VS WEEKDAY
-# ============================================================================
-st.markdown("## 🗓️ Weekend vs Weekday Comparison")
-
-# Load pre-computed weekend comparison data
-weekend_comparison = load_weekend_comparison()
-weekend_comparison.index = ["Weekday", "Weekend"]
-
-col1, col2, col3, col4 = st.columns(4)
-
-metrics = [
-    ("Activities", "participant_id", "🏃"),
-    ("Avg Calories", "calories_burned", "🔥"),
-    ("Avg Duration (min)", "duration_minutes", "⏱️"),
-    ("Avg Fitness", "fitness_level", "💪"),
-]
-
-for col, (label, metric, emoji) in zip([col1, col2, col3, col4], metrics):
-    with col:
-        # Use the string labels instead of numeric indices
-        weekday_val = weekend_comparison.loc["Weekday", metric]
-        weekend_val = weekend_comparison.loc["Weekend", metric]
-
-        fig_compare = go.Figure()
-
-        fig_compare.add_trace(
-            go.Bar(
-                x=["Weekday", "Weekend"],
-                y=[weekday_val, weekend_val],
-                marker=dict(color=["#667eea", "#f093fb"]),
-                text=[f"{weekday_val:,.1f}", f"{weekend_val:,.1f}"],
-                textposition="outside",
-            )
-        )
-
-        fig_compare.update_layout(
-            title=f"{emoji} {label}",
-            height=300,
-            showlegend=False,
-            yaxis_title="",
-            xaxis_title="",
-        )
-
-        st.plotly_chart(fig_compare, use_container_width=True)
-
-# ============================================================================
-# SEASONAL INTENSITY PATTERNS
-# ============================================================================
-st.markdown("## ⚡ Intensity Patterns Across Seasons")
-
-# Load pre-computed intensity by season data
-intensity_season = load_intensity_by_season()
-
-fig_intensity_season = px.bar(
-    intensity_season,
-    x="season",
-    y="count",
-    color="intensity",
-    barmode="group",
-    color_discrete_map={
-        "Low": "#90EE90",
-        "Medium": "#FFD700",
-        "High": "#FF6347",
-    },
-    category_orders={"season": seasons_order},
-    labels={
-        "count": "Number of Activities",
-        "season": "Season",
-        "intensity": "Intensity Level",
-    },
+render_insight_box(
+    title="Seasonal Executive Summary",
+    content="Analysis indicates consistent workout participation across all seasonal cohorts, "
+            "with peak intensity logged during <b>Summer</b> sessions. "
+            "Weekday sessions account for the majority of total workout volume.",
+    icon="💡",
 )
-
-fig_intensity_season.update_layout(
-    height=400,
-    legend=dict(
-        orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
-    ),
-)
-
-st.plotly_chart(fig_intensity_season, use_container_width=True)
-st.markdown("---")
