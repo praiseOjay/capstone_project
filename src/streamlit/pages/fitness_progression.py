@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
-from scipy import stats
+# scipy import replaced with numpy for cross-platform compatibility
 from pathlib import Path
 import sys
 
@@ -179,9 +179,7 @@ user_df["fitness_30d_avg"] = user_df["fitness_level"].rolling(window=30, min_per
 if len(user_df) > 1:
     x_numeric = (user_df["date"] - user_df["date"].min()).dt.days
     if x_numeric.nunique() > 1:
-        slope, intercept, r_value, p_value, std_err = stats.linregress(
-            x_numeric, user_df["fitness_level"]
-        )
+        slope, intercept = np.polyfit(x_numeric, user_df["fitness_level"], 1)
         user_df["trendline"] = slope * x_numeric + intercept
 
 initial_fitness = user_df["fitness_level"].iloc[0]

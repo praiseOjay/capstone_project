@@ -478,6 +478,7 @@ def create_lifestyle_bubble_matrix(df):
     bubble_df = df.dropna(subset=["hours_sleep", "stress_level", "daily_steps", "fitness_level"]).copy()
     if bubble_df.empty:
         return go.Figure()
+    bubble_df["daily_steps"] = bubble_df["daily_steps"].clip(lower=1)
 
     fig = px.scatter(
         bubble_df,
