@@ -1,11 +1,14 @@
 # 🏋️ FitLife Data Pipeline & Analytics Dashboard (ETL Capstone)
 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.30%2B-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io/)
+[![Live Demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://data-engineering-capstone-project.streamlit.app/)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Pandas](https://img.shields.io/badge/Pandas-2.0%2B-150458.svg?logo=pandas&logoColor=white)](https://pandas.pydata.org/)
 [![Pytest](https://img.shields.io/badge/Pytest-Passed-success.svg?logo=pytest&logoColor=white)](https://docs.pytest.org/)
 [![Code Style](https://img.shields.io/badge/Code%20Style-flake8-black.svg)](https://flake8.pycqa.org/)
 [![Storage](https://img.shields.io/badge/Data%20Format-Parquet%20%7C%20CSV-green.svg)](https://parquet.apache.org/)
+
+> 🚀 **Live Interactive Dashboard:** [https://data-engineering-capstone-project.streamlit.app/](https://data-engineering-capstone-project.streamlit.app/)
 
 A robust, enterprise-grade Python **ETL (Extract, Transform, Load)** pipeline and interactive **Streamlit Analytics Dashboard** built to process, clean, enrich, and visualize longitudinal fitness and health tracking metrics.
 
@@ -14,6 +17,8 @@ A robust, enterprise-grade Python **ETL (Extract, Transform, Load)** pipeline an
 ## 🌟 Executive Summary
 
 The **FitLife ETL Capstone Project** delivers an end-to-end data engineering solution that converts raw, noisy fitness tracking data into high-value analytical datasets. The pipeline standardizes demographic data, imputes missing metrics, recalculates BMIs, computes rolling trends, and loads optimized **Parquet** and **CSV** datasets powering a multi-page interactive Streamlit dashboard.
+
+👉 **Experience the live dashboard:** **[data-engineering-capstone-project.streamlit.app](https://data-engineering-capstone-project.streamlit.app/)**
 
 ---
 
@@ -162,32 +167,41 @@ cp .env.dev .env
 
 ---
 
-## 📊 Running the Application
+## 📊 Running the Application & Dashboard Access
+
+### 🌐 Live Cloud Deployment (No Setup Required)
+
+The full interactive dashboard is live on Streamlit Community Cloud:
+👉 **[https://data-engineering-capstone-project.streamlit.app/](https://data-engineering-capstone-project.streamlit.app/)**
+
+---
+
+### 💻 Running Locally
 
 The project provides entry points via `scripts/run_app.py` for flexible execution:
 
-### 1. Run Complete Pipeline & Launch Dashboard
+#### 1. Run Complete Pipeline & Launch Dashboard
 Runs the full ETL process, cleans the raw dataset, and launches the Streamlit web application automatically:
 
 ```bash
 python scripts/run_app.py dev
 ```
 
-### 2. Run ETL Pipeline Only
+#### 2. Run ETL Pipeline Only
 Process raw data without starting the web dashboard:
 
 ```bash
 python scripts/run_app.py etl_only dev
 ```
 
-### 3. Run Dashboard Only
+#### 3. Run Dashboard Only
 Launch the Streamlit dashboard using previously processed data:
 
 ```bash
 python scripts/run_app.py streamlit_only dev
 ```
 
-Access the interactive dashboard in your web browser at: **`http://localhost:8501`**
+Access the local dashboard in your web browser at: **`http://localhost:8501`**
 
 ---
 
