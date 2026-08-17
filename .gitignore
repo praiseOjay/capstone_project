@@ -143,7 +143,9 @@ cython_debug/
 # Data files
 data/raw/
 data/processed/
-data/output/
+# data/output/ parquet is tracked for Streamlit Cloud deployment
+# But ignore large CSV files that exceed GitHub's file size limit
+data/output/*.csv
 
 # Logs
 logs/

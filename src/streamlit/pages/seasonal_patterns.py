@@ -31,7 +31,6 @@ from src.streamlit.utils_ui import (  # noqa: E402
 # ============================================================================
 # PAGE CONFIGURATION & CSS
 # ============================================================================
-st.set_page_config(layout="wide", initial_sidebar_state="expanded")
 inject_custom_css()
 
 # ============================================================================
