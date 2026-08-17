@@ -1,0 +1,11 @@
+-r requirements.txt
+flake8>=7.0.0
+sqlfluff>=3.0.0
+coverage>=7.0.0
+pytest>=8.0.0
+pytest-cov>=5.0.0
+pytest-mock>=3.14.0
+diff_cover>=9.0.0
+ipykernel>=6.29.0
+ipython>=8.20.0
+debugpy>=1.8.0
