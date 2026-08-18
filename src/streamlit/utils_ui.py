@@ -347,14 +347,105 @@ def render_page_header(title: str, subtitle: str, icon: str = "💪"):
     st.markdown(html, unsafe_allow_html=True)
 
 
-def create_blood_pressure_matrix(df):
+from pathlib import Path
+
+
+@st.cache_data
+def load_data():
+    """Load the single clean dataset with memory-optimized dtypes and cache it"""
+    possible_paths = [
+        Path("data/output/clean_fitness_stats.parquet"),
+        Path(__file__).parent.parent.parent / "data" / "output" / "clean_fitness_stats.parquet",
+    ]
+    path = None
+    for p in possible_paths:
+        if p.exists():
+            path = p
+            break
+
+    if path is None:
+        st.warning(
+            "⚠️ Processed dataset not found at 'data/output/clean_fitness_stats.parquet'. "
+            "Please run the ETL pipeline first."
+        )
+        st.stop()
+
+    df = pd.read_parquet(path)
+
+    # Downcast categorical columns
+    category_cols = [
+        "gender",
+        "activity_type",
+        "intensity",
+        "health_condition",
+        "smoking_status",
+        "bmi_category",
+        "age_group",
+        "day_of_week",
+        "month",
+        "season",
+        "fitness_category",
+    ]
+    for col in category_cols:
+        if col in df.columns:
+            df[col] = df[col].astype("category")
+
+    # Downcast float columns
+    float_cols = [
+        "height_cm",
+        "weight_kg",
+        "calories_burned",
+        "hours_sleep",
+        "hydration_level",
+        "bmi",
+        "resting_heart_rate",
+        "blood_pressure_systolic",
+        "blood_pressure_diastolic",
+        "fitness_level",
+        "fitness_trend",
+        "fitness_change",
+        "fitness_change_pct",
+        "workouts_per_week",
+        "consistency_score",
+        "initial_fitness",
+        "current_fitness",
+        "total_calories",
+        "fitness_level_30d_avg",
+    ]
+    for col in float_cols:
+        if col in df.columns:
+            df[col] = df[col].astype("float32")
+
+    # Downcast integer columns
+    int_cols = {
+        "participant_id": "int32",
+        "age": "int8",
+        "duration_minutes": "int16",
+        "avg_heart_rate": "int16",
+        "stress_level": "int8",
+        "daily_steps": "int32",
+        "total_workouts": "int32",
+        "total_days": "int32",
+    }
+    for col, dt in int_cols.items():
+        if col in df.columns:
+            df[col] = df[col].astype(dt)
+
+    return df
+
+
+def create_blood_pressure_matrix(df, max_points: int = 5000):
     """
     Creates a clinical-grade Blood Pressure quadrant scatter plot
     comparing Systolic vs Diastolic BP against medical risk thresholds.
+    Applies representative sampling if points exceed max_points for browser performance.
     """
     bp_df = df.dropna(subset=["blood_pressure_systolic", "blood_pressure_diastolic"]).copy()
     if bp_df.empty:
         return go.Figure()
+
+    if len(bp_df) > max_points:
+        bp_df = bp_df.sample(max_points, random_state=42)
 
     fig = px.scatter(
         bp_df,
@@ -387,7 +478,7 @@ def create_treemap_chart(df):
     Creates an interactive Treemap chart breaking down Activity Type ➔ Intensity Level,
     sized by session count and colored by average calories burned.
     """
-    tree_df = df.groupby(["activity_type", "intensity"]).agg(
+    tree_df = df.groupby(["activity_type", "intensity"], observed=False).agg(
         session_count=("participant_id", "count"),
         avg_calories=("calories_burned", "mean"),
     ).reset_index()
@@ -471,13 +562,16 @@ def create_radar_chart(user_df, cohort_df):
     return apply_plotly_theme(fig)
 
 
-def create_lifestyle_bubble_matrix(df):
+def create_lifestyle_bubble_matrix(df, max_points: int = 5000):
     """
     Creates an interactive 3D Bubble Plot of Sleep Hours vs Stress Level vs Daily Steps vs Fitness Score.
+    Applies representative sampling if points exceed max_points for browser performance.
     """
     bubble_df = df.dropna(subset=["hours_sleep", "stress_level", "daily_steps", "fitness_level"]).copy()
     if bubble_df.empty:
         return go.Figure()
+    if len(bubble_df) > max_points:
+        bubble_df = bubble_df.sample(max_points, random_state=42)
     bubble_df["daily_steps"] = bubble_df["daily_steps"].clip(lower=1)
 
     fig = px.scatter(
@@ -507,7 +601,7 @@ def create_radial_day_chart(df):
     """
     day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
-    day_stats = df.groupby("day_of_week").agg(
+    day_stats = df.groupby("day_of_week", observed=False).agg(
         sessions=("participant_id", "count"),
         avg_calories=("calories_burned", "mean"),
     ).reindex(day_order).fillna(0).reset_index()
@@ -538,3 +632,4 @@ def create_radial_day_chart(df):
         showlegend=False,
     )
     return apply_plotly_theme(fig)
+

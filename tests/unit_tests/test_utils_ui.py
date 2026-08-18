@@ -119,3 +119,23 @@ def test_render_helpers(mocker):
     mock_markdown.reset_mock()
     render_page_header("Header Title", "Header Subtitle")
     mock_markdown.assert_called_once()
+
+
+def test_create_blood_pressure_matrix_sampling(sample_fitness_df):
+    """Verify Blood Pressure scatter matrix downsamples when rows exceed max_points."""
+    large_df = pd.concat([sample_fitness_df] * 20, ignore_index=True)
+    fig = create_blood_pressure_matrix(large_df, max_points=10)
+    assert isinstance(fig, go.Figure)
+    # Total points plotted across all condition traces should equal max_points
+    total_pts = sum(len(trace.x) for trace in fig.data if hasattr(trace, "x") and trace.x is not None)
+    assert total_pts == 10
+
+
+def test_create_lifestyle_bubble_matrix_sampling(sample_fitness_df):
+    """Verify Lifestyle bubble matrix downsamples when rows exceed max_points."""
+    large_df = pd.concat([sample_fitness_df] * 20, ignore_index=True)
+    fig = create_lifestyle_bubble_matrix(large_df, max_points=10)
+    assert isinstance(fig, go.Figure)
+    total_pts = sum(len(trace.x) for trace in fig.data if hasattr(trace, "x") and trace.x is not None)
+    assert total_pts == 10
+

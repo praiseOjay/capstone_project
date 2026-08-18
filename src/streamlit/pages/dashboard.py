@@ -19,6 +19,7 @@ from src.streamlit.utils_ui import (  # noqa: E402
     create_blood_pressure_matrix,
     create_treemap_chart,
     create_lifestyle_bubble_matrix,
+    load_data,
     PRIMARY_COLOR,
     SECONDARY_COLOR,
     ACCENT_CYAN,
@@ -35,19 +36,6 @@ inject_custom_css()
 # ============================================================================
 # DATA LOADING
 # ============================================================================
-@st.cache_data
-def load_data():
-    """Load the single clean dataset and cache it"""
-    path = Path("data/output/clean_fitness_stats.parquet")
-    if not path.exists():
-        st.warning(
-            "⚠️ Processed dataset not found at 'data/output/clean_fitness_stats.parquet'. "
-            "Please run the ETL pipeline first."
-        )
-        st.stop()
-    return pd.read_parquet(path)
-
-
 @st.cache_data
 def calculate_global_metrics(df):
     """Pre-calculate baseline global metrics"""
@@ -91,7 +79,7 @@ date_range = st.sidebar.date_input(
 )
 
 # Gender filter
-gender_options = ["All"] + sorted(list(df["gender"].dropna().unique()))
+gender_options = ["All"] + sorted([str(x) for x in df["gender"].dropna().unique()])
 selected_gender = st.sidebar.selectbox("Gender", gender_options)
 
 # Age range filter
@@ -104,11 +92,11 @@ age_range = st.sidebar.slider(
 )
 
 # Health condition filter
-health_options = ["All"] + sorted(list(df["health_condition"].dropna().unique()))
+health_options = ["All"] + sorted([str(x) for x in df["health_condition"].dropna().unique()])
 selected_health = st.sidebar.selectbox("Health Condition", health_options)
 
 # Activity type filter
-activity_options = ["All"] + sorted(list(df["activity_type"].dropna().unique()))
+activity_options = ["All"] + sorted([str(x) for x in df["activity_type"].dropna().unique()])
 selected_activity = st.sidebar.multiselect(
     "Activity Type", activity_options, default=["All"]
 )
@@ -227,12 +215,12 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("#### 🩺 Cardiovascular Risk Matrix (Systolic vs Diastolic BP)")
     fig_bp = create_blood_pressure_matrix(filtered_df)
-    st.plotly_chart(fig_bp, use_container_width=True)
+    st.plotly_chart(fig_bp, width="stretch")
 
 with col2:
     st.markdown("#### 🗺️ Activity & Intensity Caloric Treemap")
     fig_tree = create_treemap_chart(filtered_df)
-    st.plotly_chart(fig_tree, use_container_width=True)
+    st.plotly_chart(fig_tree, width="stretch")
 
 # ============================================================================
 # INTERACTIVE ADVANCED VISUALIZATIONS - ROW 2
@@ -242,12 +230,13 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown("#### 🫧 Lifestyle Balance: Sleep vs Stress vs Daily Steps")
     fig_bubble = create_lifestyle_bubble_matrix(filtered_df)
-    st.plotly_chart(fig_bubble, use_container_width=True)
+    st.plotly_chart(fig_bubble, width="stretch")
 
 with col2:
     st.markdown("#### 📦 Fitness Level Distribution by Health Condition")
+    box_sample = filtered_df if len(filtered_df) <= 5000 else filtered_df.sample(5000, random_state=42)
     fig_box = px.box(
-        filtered_df,
+        box_sample,
         x="health_condition",
         y="fitness_level",
         color="health_condition",
@@ -263,7 +252,7 @@ with col2:
         xaxis_title="Health Condition",
         yaxis_title="Fitness Level (Score)",
     )
-    st.plotly_chart(apply_plotly_theme(fig_box), use_container_width=True)
+    st.plotly_chart(apply_plotly_theme(fig_box), width="stretch")
 
 # Executive Insights Callout
 top_condition = filtered_df["health_condition"].mode().iloc[0] if not filtered_df["health_condition"].empty else "N/A"
@@ -286,7 +275,7 @@ with st.expander("📄 Data Explorer & Export Options", expanded=False):
     st.markdown("##### Filtered Dataset Records")
     st.dataframe(
         filtered_df.head(100),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -297,3 +286,4 @@ with st.expander("📄 Data Explorer & Export Options", expanded=False):
         file_name="filtered_fitness_dataset.csv",
         mime="text/csv",
     )
+

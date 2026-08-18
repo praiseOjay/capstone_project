@@ -4,7 +4,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import numpy as np
-# scipy import replaced with numpy for cross-platform compatibility
 from pathlib import Path
 import sys
 
@@ -20,6 +19,7 @@ from src.streamlit.utils_ui import (  # noqa: E402
     render_insight_box,
     render_page_header,
     create_radar_chart,
+    load_data,
     PRIMARY_COLOR,
     SECONDARY_COLOR,
     ACCENT_CYAN,
@@ -36,19 +36,6 @@ inject_custom_css()
 # ============================================================================
 # LOAD DATA
 # ============================================================================
-@st.cache_data
-def load_data():
-    """Load the single clean dataset and cache it"""
-    path = Path("data/output/clean_fitness_stats.parquet")
-    if not path.exists():
-        st.warning(
-            "⚠️ Processed dataset not found at 'data/output/clean_fitness_stats.parquet'. "
-            "Please run the ETL pipeline first."
-        )
-        st.stop()
-    return pd.read_parquet(path)
-
-
 @st.cache_data
 def load_participant_data(participant_id, df):
     """Get data for a specific participant"""
@@ -162,7 +149,7 @@ with col_prof:
 with col_radar:
     st.markdown("##### Multi-Axis Benchmark Spider Radar")
     fig_radar = create_radar_chart(user_df, comparison_df)
-    st.plotly_chart(fig_radar, use_container_width=True)
+    st.plotly_chart(fig_radar, width="stretch")
 
 st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
 
@@ -242,7 +229,7 @@ fig_prog.update_layout(
     yaxis_title="Fitness Level (Score)",
 )
 
-st.plotly_chart(apply_plotly_theme(fig_prog), use_container_width=True)
+st.plotly_chart(apply_plotly_theme(fig_prog), width="stretch")
 
 # Progression Metrics Summary
 c1, c2, c3, c4 = st.columns(4)
@@ -353,7 +340,7 @@ if not weekly.empty and len(weekly) > 1:
     fig_health.update_xaxes(title_text="Week of Year", row=2, col=2)
 
     fig_health.update_layout(height=480, showlegend=False, hovermode="x unified")
-    st.plotly_chart(apply_plotly_theme(fig_health), use_container_width=True)
+    st.plotly_chart(apply_plotly_theme(fig_health), width="stretch")
 
     # Executive Trajectory Summary
     render_insight_box(
@@ -365,3 +352,4 @@ if not weekly.empty and len(weekly) > 1:
     )
 else:
     st.info("ℹ️ Insufficient multi-week data available for detailed trend subplots.")
+

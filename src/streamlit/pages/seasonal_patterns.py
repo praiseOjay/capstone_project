@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import numpy as np
 import calendar
 from pathlib import Path
 import sys
@@ -20,6 +19,7 @@ from src.streamlit.utils_ui import (  # noqa: E402
     render_insight_box,
     render_page_header,
     create_radial_day_chart,
+    load_data,
     PRIMARY_COLOR,
     SECONDARY_COLOR,
     ACCENT_CYAN,
@@ -36,19 +36,6 @@ inject_custom_css()
 # ============================================================================
 # LOAD DATA
 # ============================================================================
-@st.cache_data
-def load_data():
-    """Load the single clean dataset and cache it"""
-    path = Path("data/output/clean_fitness_stats.parquet")
-    if not path.exists():
-        st.warning(
-            "⚠️ Processed dataset not found at 'data/output/clean_fitness_stats.parquet'. "
-            "Please run the ETL pipeline first."
-        )
-        st.stop()
-    return pd.read_parquet(path)
-
-
 df = load_data()
 
 # Header
@@ -63,16 +50,16 @@ render_page_header(
 # ============================================================================
 st.sidebar.markdown("## 🔍 Seasonal Filters")
 
-season_options = ["All"] + sorted(list(df["season"].dropna().unique()))
+season_options = ["All"] + sorted([str(x) for x in df["season"].dropna().unique()])
 selected_seasons = st.sidebar.multiselect("Select Seasons", season_options, default=["All"])
 
-gender_options = ["All"] + sorted(list(df["gender"].dropna().unique()))
+gender_options = ["All"] + sorted([str(x) for x in df["gender"].dropna().unique()])
 selected_gender = st.sidebar.selectbox("Gender", gender_options)
 
 min_age, max_age = int(df["age"].min()), int(df["age"].max())
 age_range = st.sidebar.slider("Age Range", min_age, max_age, (min_age, max_age))
 
-activity_options = ["All"] + sorted(list(df["activity_type"].dropna().unique()))
+activity_options = ["All"] + sorted([str(x) for x in df["activity_type"].dropna().unique()])
 selected_activities = st.sidebar.multiselect("Activity Types", activity_options, default=["All"])
 
 filtered_df = df.copy()
@@ -103,7 +90,7 @@ if filtered_df.empty:
 st.markdown("### ❄️☀️ Seasonal Performance Summary")
 
 season_stats = (
-    filtered_df.groupby("season")
+    filtered_df.groupby("season", observed=False)
     .agg(
         total_sessions=("participant_id", "count"),
         avg_calories=("calories_burned", "mean"),
@@ -160,7 +147,7 @@ if "month" not in filtered_df.columns:
     filtered_df["month"] = filtered_df["date"].dt.month
 
 monthly = (
-    filtered_df.groupby("month")
+    filtered_df.groupby("month", observed=False)
     .agg(
         sessions=("participant_id", "count"),
         avg_calories=("calories_burned", "mean"),
@@ -189,7 +176,7 @@ with col1:
     )
     fig_vol.update_traces(textposition="outside")
     fig_vol.update_layout(height=340, xaxis_title="", yaxis_title="Total Sessions", coloraxis_showscale=False)
-    st.plotly_chart(apply_plotly_theme(fig_vol), use_container_width=True)
+    st.plotly_chart(apply_plotly_theme(fig_vol), width="stretch")
 
 with col2:
     st.markdown("##### Monthly Caloric Expenditure & Fitness Level")
@@ -203,7 +190,7 @@ with col2:
         secondary_y=True,
     )
     fig_dual.update_layout(height=340, hovermode="x unified", legend=dict(orientation="h", y=1.1, x=1))
-    st.plotly_chart(apply_plotly_theme(fig_dual), use_container_width=True)
+    st.plotly_chart(apply_plotly_theme(fig_dual), width="stretch")
 
 st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
 
@@ -215,7 +202,7 @@ st.markdown("### 🗓️ 7-Day Workout Rhythm & Weekend Dynamics")
 col_w_metrics, col_radial = st.columns([1, 1])
 
 w_agg = (
-    filtered_df.groupby("is_weekend")
+    filtered_df.groupby("is_weekend", observed=False)
     .agg(
         sessions=("participant_id", "count"),
         calories=("calories_burned", "mean"),
@@ -255,7 +242,7 @@ with col_w_metrics:
 with col_radial:
     st.markdown("##### 7-Day Workout Rhythm Clock")
     fig_radial = create_radial_day_chart(filtered_df)
-    st.plotly_chart(fig_radial, use_container_width=True)
+    st.plotly_chart(fig_radial, width="stretch")
 
 st.markdown("<div class='section-divider'></div>", unsafe_allow_html=True)
 
@@ -268,7 +255,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.markdown("##### Session Count by Season & Intensity")
-    intensity_matrix = filtered_df.groupby(["season", "intensity"]).size().unstack(fill_value=0)
+    intensity_matrix = filtered_df.groupby(["season", "intensity"], observed=False).size().unstack(fill_value=0)
     fig_heat = px.imshow(
         intensity_matrix,
         labels=dict(x="Intensity Level", y="Season", color="Session Count"),
@@ -277,12 +264,13 @@ with col1:
         text_auto=True,
     )
     fig_heat.update_layout(height=340)
-    st.plotly_chart(apply_plotly_theme(fig_heat), use_container_width=True)
+    st.plotly_chart(apply_plotly_theme(fig_heat), width="stretch")
 
 with col2:
     st.markdown("##### Duration vs Calories across Seasons")
+    scat_sample = filtered_df if len(filtered_df) <= 5000 else filtered_df.sample(5000, random_state=42)
     fig_scat = px.scatter(
-        filtered_df,
+        scat_sample,
         x="duration_minutes",
         y="calories_burned",
         color="season",
@@ -291,7 +279,7 @@ with col2:
         labels={"duration_minutes": "Duration (min)", "calories_burned": "Calories (kcal)"},
     )
     fig_scat.update_layout(height=340)
-    st.plotly_chart(apply_plotly_theme(fig_scat), use_container_width=True)
+    st.plotly_chart(apply_plotly_theme(fig_scat), width="stretch")
 
 render_insight_box(
     title="Seasonal Executive Summary",
@@ -300,3 +288,4 @@ render_insight_box(
             "Weekday sessions account for the majority of total workout volume.",
     icon="💡",
 )
+
