@@ -10,13 +10,13 @@
 
 > 🚀 **Live Interactive Dashboard:** [https://data-engineering-capstone-project.streamlit.app/](https://data-engineering-capstone-project.streamlit.app/)
 
-A robust, enterprise-grade Python **ETL (Extract, Transform, Load)** pipeline and interactive **Streamlit Analytics Dashboard** built to process, clean, enrich, and visualize longitudinal fitness and health tracking metrics.
+A robust, Production-level Python **ETL (Extract, Transform, Load)** pipeline and interactive **Streamlit Analytics Dashboard** built to process, clean, enrich, and visualise longitudinal fitness and health tracking metrics.
 
 ---
 
 ## 🌟 Executive Summary
 
-The **FitLife ETL Capstone Project** delivers an end-to-end data engineering solution that converts raw, noisy fitness tracking data into high-value analytical datasets. The pipeline standardizes demographic data, imputes missing metrics, recalculates BMIs, computes rolling trends, and loads optimized **Parquet** and **CSV** datasets powering a multi-page interactive Streamlit dashboard.
+The **FitLife ETL Capstone Project** delivers an end-to-end data engineering solution that converts raw, noisy fitness tracking data into high-value analytical datasets. The pipeline standardises demographic data, imputes missing metrics, recalculates BMIs, computes rolling trends, and loads optimised **Parquet** and **CSV** datasets powering a multi-page interactive Streamlit dashboard.
 
 👉 **Experience the live dashboard:** **[data-engineering-capstone-project.streamlit.app](https://data-engineering-capstone-project.streamlit.app/)**
 
@@ -66,7 +66,7 @@ Agile task backlog tracking development execution from raw ingestion to dashboar
    - Outputs extraction telemetry and row counts via structured logging.
 
 2. **Transform**:
-   - **Data Cleaning**: Standardizes date formats, fills missing values, and removes duplicate entries.
+   - **Data Cleaning**: Standardises date formats, fills missing values, and removes duplicate entries.
    - **Validation**: Filters out invalid outliers (e.g., unrealistic age ranges).
    - **Data Enrichment**: Recalculates exact BMI scores, assigns health condition brackets, and computes weekly activity summaries and 30-day rolling averages per participant.
 
@@ -255,6 +255,6 @@ sqlfluff lint
 
 ## 👨‍💻 Author
 
-**Praise Ojerinola** ([@praiseOjay](https://github.com/praiseOjay))
+**Praise Ojerinola**
 - GitHub: [github.com/praiseOjay](https://github.com/praiseOjay)
 - Email: [ojerinolapraise@gmail.com](mailto:ojerinolapraise@gmail.com)
