@@ -101,27 +101,23 @@ selected_activity = st.sidebar.multiselect(
     "Activity Type", activity_options, default=["All"]
 )
 
-# Filtering execution
-filtered_df = df.copy()
+# Filtering execution using combined boolean mask for memory efficiency
+mask = (df["age"] >= age_range[0]) & (df["age"] <= age_range[1])
 
 if len(date_range) == 2:
     start_d, end_d = date_range[0], date_range[1]
-    filtered_df = filtered_df[
-        (filtered_df["date"].dt.date >= start_d) & (filtered_df["date"].dt.date <= end_d)
-    ]
+    mask &= (df["date"] >= pd.Timestamp(start_d)) & (df["date"] <= pd.Timestamp(end_d))
 
 if selected_gender != "All":
-    filtered_df = filtered_df[filtered_df["gender"] == selected_gender]
-
-filtered_df = filtered_df[
-    (filtered_df["age"] >= age_range[0]) & (filtered_df["age"] <= age_range[1])
-]
+    mask &= (df["gender"] == selected_gender)
 
 if selected_health != "All":
-    filtered_df = filtered_df[filtered_df["health_condition"] == selected_health]
+    mask &= (df["health_condition"] == selected_health)
 
 if "All" not in selected_activity and selected_activity:
-    filtered_df = filtered_df[filtered_df["activity_type"].isin(selected_activity)]
+    mask &= df["activity_type"].isin(selected_activity)
+
+filtered_df = df[mask]
 
 # Sidebar statistics summary badge
 pct_active = (len(filtered_df) / len(df) * 100) if len(df) > 0 else 0

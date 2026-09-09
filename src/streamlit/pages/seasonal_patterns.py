@@ -62,20 +62,19 @@ age_range = st.sidebar.slider("Age Range", min_age, max_age, (min_age, max_age))
 activity_options = ["All"] + sorted([str(x) for x in df["activity_type"].dropna().unique()])
 selected_activities = st.sidebar.multiselect("Activity Types", activity_options, default=["All"])
 
-filtered_df = df.copy()
+# Filtering execution using combined boolean mask for memory efficiency
+mask = (df["age"] >= age_range[0]) & (df["age"] <= age_range[1])
 
 if "All" not in selected_seasons and selected_seasons:
-    filtered_df = filtered_df[filtered_df["season"].isin(selected_seasons)]
+    mask &= df["season"].isin(selected_seasons)
 
 if selected_gender != "All":
-    filtered_df = filtered_df[filtered_df["gender"] == selected_gender]
-
-filtered_df = filtered_df[
-    (filtered_df["age"] >= age_range[0]) & (filtered_df["age"] <= age_range[1])
-]
+    mask &= (df["gender"] == selected_gender)
 
 if "All" not in selected_activities and selected_activities:
-    filtered_df = filtered_df[filtered_df["activity_type"].isin(selected_activities)]
+    mask &= df["activity_type"].isin(selected_activities)
+
+filtered_df = df[mask]
 
 st.sidebar.markdown("---")
 st.sidebar.info(f"📊 **Active Sample:** {len(filtered_df):,} / {len(df):,} sessions")

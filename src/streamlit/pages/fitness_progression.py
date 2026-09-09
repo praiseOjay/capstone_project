@@ -79,7 +79,7 @@ user_date_range = st.sidebar.date_input(
 if len(user_date_range) == 2:
     start_d, end_d = user_date_range[0], user_date_range[1]
     user_df = user_df[
-        (user_df["date"].dt.date >= start_d) & (user_df["date"].dt.date <= end_d)
+        (user_df["date"] >= pd.Timestamp(start_d)) & (user_df["date"] <= pd.Timestamp(end_d))
     ]
 
 # Cohort comparison settings
